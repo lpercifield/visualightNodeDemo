@@ -4,9 +4,40 @@
 var WebSocketServer = require('websocket').server;
 var http = require('http');
 var net = require('net');
+var WebSocket = require('websocket-client').WebSocket;
+//var jQuery = require('jquery');
+//var cosm = require('cosmjs');
+
 //var arduinoTcp = null;
 var lights=[];
 var request = require('request');
+var r=0; 
+var g=0; 
+var b=0;
+//var sys = require('util');
+
+
+var ws = new WebSocket('ws://api.cosm.com:8080/');
+ws.addListener('data', function(buf) {
+    console.log('Got data: ' + buf);
+});
+ws.addListener('CONNECTING', function(buf) {
+    console.log('opened: ' + buf);
+});
+ws.send("{'headers':{'X-ApiKey':'wFh0zSkJ4L3Znbyv03ujiDdoCDiUczAfVGAHGH6LmkI'}, 'method':'subscribe', 'resource':'/feeds/76032/datastreams/light'}");
+ws.onmessage = function(m) {
+    console.log('Got message: ' + m);
+}
+/*var sys = require('util');
+var WebSocket = require('websocket').WebSocket;
+//var options = "{'headers':{'X-ApiKey':'wFh0zSkJ4L3Znbyv03ujiDdoCDiUczAfVGAHGH6LmkI'}, 'method':'subscribe', 'resource':'/feeds/76032/datastreams/light'}";
+var ws = new WebSocket('ws://api.cosm.com:8080', "{'headers':{'X-ApiKey':'wFh0zSkJ4L3Znbyv03ujiDdoCDiUczAfVGAHGH6LmkI'}, 'method':'subscribe', 'resource':'/feeds/76032/datastreams/light'}");
+ws.addListener('data', function(buf) {
+    sys.debug('Got data: ' + sys.inspect(buf));
+});
+ws.onmessage = function(m) {
+    sys.debug('Got message: ' + m);
+}*/
 
 var netserver = net.createServer(function(socket) { //'connection' listener
 	console.log('arduino connected');
@@ -63,13 +94,20 @@ request('http://api.wunderground.com/api/e9e74e882dede7ed/conditions/q/'+zipcode
     var obj = JSON.parse(body);
     var temp = obj.current_observation.temp_f;
     console.log( obj.current_observation.temp_f );
+    var normalized = normF(temp, 30,90);
+	console.log("Normalized: "+normalized);
+	var hue = map_range(normalized,0,255,(359*0.5),359);
+	setLedColorHSV(hue,1,1);
+	console.log("red: "+Math.round(r*255)+"green: "+Math.round(g*255)+"blue: "+Math.round(b*255));
     if(lights.length > 0){
 		if(temp != null){
 			for(var i = 0; i < lights.length; i++){
-				var red = map_range(temp, 32,100,0,255);
-				var blue = map_range(temp,32,100,255,0);
-				var tempColor = Math.round(red)+","+0+","+Math.round(blue);
-				console.log(tempColor);
+				//var normalized = normF(temp, 30,90);
+				//console.log("Normalized: "+normalized);
+				//var red = map_range(temp, 32,100,0,255);
+				//var blue = map_range(temp,32,100,255,0);
+				var tempColor = Math.round(r*255)+","+Math.round(g*255)+","+Math.round(b*255)+",0";
+				//console.log(tempColor);
 				lights[i].write(tempColor);
 				lights[i].write("x");
 			}
@@ -121,7 +159,7 @@ request('http://bustime.mta.info/api/siri/stop-monitoring.json?key=TEST&Operator
   }
 })
 };
-setInterval(getBusStops,10000);
+//setInterval(getBusStops,10000);
 wsServer.on('request', function(request) {
     if (!originIsAllowed(request.origin)) {
       // Make sure we only accept requests from an allowed origin
@@ -165,4 +203,62 @@ wsServer.on('request', function(request) {
         console.log((new Date()) + ' Peer ' + connection.remoteAddress + ' disconnected.');
     });
 });
+function setLedColorHSV(h, s, v) {
+ r=0; 
+  g=0; 
+  b=0;
+
+  var hf=h/60.0;
+
+  var i=Math.round(Math.floor(h/60.0));
+  var f = h/60.0 - i;
+  var pv = v * (1 - s);
+  var qv = v * (1 - s*f);
+  var tv = v * (1 - s * (1 - f));
+  switch (i)
+  {
+  case 0: //rojo dominante
+    r = v;
+    g = tv;
+    b = pv;
+    break;
+  case 1: //verde
+    r = qv;
+    g = v;
+    b = pv;
+    break;
+  case 2: 
+    r = pv;
+    g = v;
+    b = tv;
+    break;
+  case 3: //azul
+    r = pv;
+    g = qv;
+    b = v;
+    break;
+  case 4:
+    r = tv;
+    g = pv;
+    b = v;
+    break;
+  case 5: //rojo
+    r = v;
+    g = pv;
+    b = qv;
+    break;
+    }
+    //console.log("red: "+r*255+"green: "+g*255+"blue: "+b*255);
+}
+var normF = function( x,  low,  high) {
+  var y = (x - low) * 255/ (high - low);
+  if(y > 255) {
+    y = 255;
+  }
+  if(y < 0) {
+    y = 0;
+  }
+  return y;
+};
+
 
