@@ -4,7 +4,7 @@
 var WebSocketServer = require('websocket').server;
 var http = require('http');
 var net = require('net');
-var WebSocket = require('websocket-client').WebSocket;
+var WebSocketClient = require('websocket').client;
 //var jQuery = require('jquery');
 //var cosm = require('cosmjs');
 
@@ -14,20 +14,42 @@ var request = require('request');
 var r=0; 
 var g=0; 
 var b=0;
-//var sys = require('util');
 
 
-var ws = new WebSocket('ws://api.cosm.com:8080/');
-ws.addListener('data', function(buf) {
-    console.log('Got data: ' + buf);
+
+
+var client = new WebSocketClient();
+
+client.on('connectFailed', function(error) {
+    console.log('Connect Error: ' + error.toString());
 });
-ws.addListener('CONNECTING', function(buf) {
-    console.log('opened: ' + buf);
+
+client.on('connect', function(connection) {
+    console.log('WebSocket client connected');
+    connection.on('error', function(error) {
+        console.log("Connection Error: " + error.toString());
+    });
+    connection.on('close', function() {
+        console.log('echo-protocol Connection Closed');
+    });
+    connection.on('message', function(message) {
+        if (message.type === 'utf8') {
+            console.log("Received: '" + message.utf8Data + "'");
+        }
+    });
+
+    function sendNumber() {
+        if (connection.connected) {
+            var number = Math.round(Math.random() * 0xFFFFFF);
+            connection.sendUTF(number.toString());
+            setTimeout(sendNumber, 1000);
+        }
+    }
+    sendNumber();
 });
-ws.send("{'headers':{'X-ApiKey':'wFh0zSkJ4L3Znbyv03ujiDdoCDiUczAfVGAHGH6LmkI'}, 'method':'subscribe', 'resource':'/feeds/76032/datastreams/light'}");
-ws.onmessage = function(m) {
-    console.log('Got message: ' + m);
-}
+client.connect('ws://api.cosm.com:8080/', 'echo-protocol');
+//ws.send("{'headers':{'X-ApiKey':'wFh0zSkJ4L3Znbyv03ujiDdoCDiUczAfVGAHGH6LmkI'}, 'method':'subscribe', 'resource':'/feeds/76032/datastreams/light'}");
+
 /*var sys = require('util');
 var WebSocket = require('websocket').WebSocket;
 //var options = "{'headers':{'X-ApiKey':'wFh0zSkJ4L3Znbyv03ujiDdoCDiUczAfVGAHGH6LmkI'}, 'method':'subscribe', 'resource':'/feeds/76032/datastreams/light'}";
