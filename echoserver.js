@@ -21,10 +21,35 @@ var b=0;
 var WebSocket = require('ws')
   , ws = new WebSocket('ws://api.cosm.com:8080/');
 ws.on('open', function() {
-    ws.send('{"headers":{"X-ApiKey":"ofRx0QE0eD6THF3bDqDcTXPs9vWSAKx6Q3ptcUlsQTJjMD0g"}, "method":"subscribe", "resource":"/feeds/80197/datastreams/light"}');
+    ws.send('{"headers":{"X-ApiKey":"ofRx0QE0eD6THF3bDqDcTXPs9vWSAKx6Q3ptcUlsQTJjMD0g"}, "method":"subscribe", "resource":"/feeds/61916/datastreams/sawtooth900"}');
 });
 ws.on('message', function(message) {
-    console.log('received: %s', message);
+    //console.log('received: %s', message);
+    var cosm = JSON.parse(message);
+    if(cosm.status == null){
+    var num = cosm.body.current_value;
+    //console.log(cosm.body.current_value);
+    var normalized = normF(num, 0,1);
+	console.log("Normalized: "+normalized);
+	var hue = map_range(normalized,0,255,(359*0.5),359);
+	setLedColorHSV(hue,1,1);
+	if(lights.length > 0){
+		if(num != null){
+			for(var i = 0; i < lights.length; i++){
+				//var normalized = normF(temp, 30,90);
+				//console.log("Normalized: "+normalized);
+				//var red = map_range(temp, 32,100,0,255);
+				//var blue = map_range(temp,32,100,255,0);
+				var tempColor = Math.round(r*255)+","+Math.round(g*255)+","+Math.round(b*255)+",0";
+				//console.log(tempColor);
+				lights[i].write(tempColor);
+				lights[i].write("x");
+			}
+		}
+	}else{
+		console.log("NO ARDUINO CONNECTED");
+	}
+    }
 });
 //ws.send("{'headers':{'X-ApiKey':'wFh0zSkJ4L3Znbyv03ujiDdoCDiUczAfVGAHGH6LmkI'}, 'method':'subscribe', 'resource':'/feeds/76032/datastreams/light'}");
 
