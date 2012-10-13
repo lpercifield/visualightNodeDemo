@@ -18,36 +18,14 @@ var b=0;
 
 
 
-var client = new WebSocketClient();
-
-client.on('connectFailed', function(error) {
-    console.log('Connect Error: ' + error.toString());
+var WebSocket = require('ws')
+  , ws = new WebSocket('ws://api.cosm.com:8080/');
+ws.on('open', function() {
+    ws.send('{"headers":{"X-ApiKey":"ofRx0QE0eD6THF3bDqDcTXPs9vWSAKx6Q3ptcUlsQTJjMD0g"}, "method":"subscribe", "resource":"/feeds/80197/datastreams/light"}');
 });
-
-client.on('connect', function(connection) {
-    console.log('WebSocket client connected');
-    connection.on('error', function(error) {
-        console.log("Connection Error: " + error.toString());
-    });
-    connection.on('close', function() {
-        console.log('echo-protocol Connection Closed');
-    });
-    connection.on('message', function(message) {
-        if (message.type === 'utf8') {
-            console.log("Received: '" + message.utf8Data + "'");
-        }
-    });
-
-    function sendNumber() {
-        if (connection.connected) {
-            var number = Math.round(Math.random() * 0xFFFFFF);
-            connection.sendUTF(number.toString());
-            setTimeout(sendNumber, 1000);
-        }
-    }
-    sendNumber();
+ws.on('message', function(message) {
+    console.log('received: %s', message);
 });
-client.connect('ws://api.cosm.com:8080/', 'echo-protocol');
 //ws.send("{'headers':{'X-ApiKey':'wFh0zSkJ4L3Znbyv03ujiDdoCDiUczAfVGAHGH6LmkI'}, 'method':'subscribe', 'resource':'/feeds/76032/datastreams/light'}");
 
 /*var sys = require('util');
